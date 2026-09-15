@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     if args.test:
         run_verification_tests()
-    elif args.quick-render:
+    elif args.quick_render:
         run_quick_render(width=args.width, height=args.height, output=args.output)
     else:
         run_quick_render()
