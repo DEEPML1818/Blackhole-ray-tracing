@@ -32,7 +32,7 @@ def puncture_plot(data_file: str, plot_file=0) -> None:
     Y = np.reshape(y, (n_grid, n_grid))
     FCT = np.reshape(fct, (n_grid, n_grid))
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(X, Y, FCT, cmap=cm.plasma, linewidth=1,
                     antialiased=False, alpha=0.2)
     ax.contour(X, Y, FCT, zdir='z', offset=0.0, cmap=cm.plasma)
