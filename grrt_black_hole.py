@@ -317,41 +317,42 @@ def calc_emission(r, phi, t_phase, M, r_isco, r_out):
 @njit(fastmath=True)
 def temperature_to_fiery_rgb(intensity, g):
     """
-    Pure orange-red color mapping matching the NASA Goddard reference GIF:
-    - Black -> deep red -> vivid orange (no yellow, no white hotspots)
-    - g factor only mildly modulates brightness (symmetric disk look)
+    Relativistic Blackbody & Doppler Color Spectrum:
+    - Approaching side (high g ~ 1.2 - 2.0): Relativistic Doppler blueshift transforms gas into white-hot / incandescent yellow-cyan core.
+    - ISCO inner edge: Peak thermal emission producing brilliant white core.
+    - Receding side (low g ~ 0.4 - 0.7): Gravitational redshift dims gas into deep crimson red.
     """
     if intensity <= 1e-6:
         return 0.0, 0.0, 0.0
 
-    brightness = intensity * (0.90 + 0.10 * g)
+    # Relativistic Doppler boost factor g^3.5
+    doppler_boost = g ** 3.0
+    eff_intensity = intensity * doppler_boost
 
-    # Red: saturates to full red
-    r_lum = brightness * 4.5
+    # Tone-mapped RGB channels
+    r_lum = eff_intensity * 3.5
+    g_lum = eff_intensity * (1.8 * (g ** 1.2))
+    b_lum = eff_intensity * (0.8 * (g ** 2.2))
+
     r_val = r_lum / (1.0 + r_lum)
+    g_val = g_lum / (1.0 + g_lum)
+    b_val = b_lum / (1.0 + b_lum)
 
-    # Green: ~45% of red value to land in deep orange (not yellow)
-    g_lum = brightness * 1.8
-    g_val = (g_lum / (1.0 + g_lum)) * 0.48
-
-    # Blue: zero
-    b_val = 0.0
-
-    return r_val, g_val, b_val
+    return min(1.0, max(0.0, r_val)), min(1.0, max(0.0, g_val)), min(1.0, max(0.0, b_val))
 
 
 
 @njit(parallel=True, fastmath=True)
 def shade_frame(hits, r1_arr, phi1_arr, g1_arr, r2_arr, phi2_arr, g2_arr, M, r_isco, r_out, time_phase):
-    """Renders pixel colors matching NASA Goddard reference:
-    - Bold saturated primary disk, deep black outer regions
-    - Thin subtle secondary arc (not a blob), no yellow/white hotspots
+    """Renders pixel colors matching photorealistic GRRT astrophysics:
+    - Relativistic Doppler beaming (incandescent white approaching, crimson receding)
+    - Lensed secondary Einstein arches & razor-sharp photon ring
     """
     height, width = hits.shape
     img = np.zeros((height, width, 3), dtype=np.float32)
 
     alpha = 0.96   # Primary disk: bold and saturated
-    trans = 0.22   # Secondary arc: just a thin sliver, as in reference
+    trans = 0.35   # Secondary arc: lensed Einstein arch
 
     for j in prange(height):
         for i in range(width):
@@ -363,7 +364,7 @@ def shade_frame(hits, r1_arr, phi1_arr, g1_arr, r2_arr, phi2_arr, g2_arr, M, r_i
             tot_g = 0.0
             tot_b = 0.0
 
-            # Primary image — g^1.5 gives slight brightness variation without full Doppler asymmetry
+            # Primary image — g^3.0 Doppler beaming asymmetry
             r1 = r1_arr[j, i]
             p1 = phi1_arr[j, i]
             g1 = g1_arr[j, i]
@@ -375,22 +376,21 @@ def shade_frame(hits, r1_arr, phi1_arr, g1_arr, r2_arr, phi2_arr, g2_arr, M, r_i
             tot_g += alpha * cg1
             tot_b += alpha * cb1
 
-            # Secondary image — thin lensed arc, kept subtle
+            # Secondary image — lensed Einstein arch
             if hc >= 2:
                 r2 = r2_arr[j, i]
                 p2 = phi2_arr[j, i]
                 g2 = g2_arr[j, i]
                 emit2 = calc_emission(r2, p2, time_phase, M, r_isco, r_out)
-                int2 = emit2 * g2
+                int2 = emit2 * (g2 ** 1.5)
                 cr2, cg2, cb2 = temperature_to_fiery_rgb(int2, g2)
-
                 tot_r = min(1.0, tot_r + trans * cr2)
                 tot_g = min(1.0, tot_g + trans * cg2)
                 tot_b = min(1.0, tot_b + trans * cb2)
 
-            img[j, i, 0] = tot_r
-            img[j, i, 1] = tot_g
-            img[j, i, 2] = tot_b
+            img[j, i, 0] = min(1.0, tot_r)
+            img[j, i, 1] = min(1.0, tot_g)
+            img[j, i, 2] = min(1.0, tot_b)
 
     return img
 
