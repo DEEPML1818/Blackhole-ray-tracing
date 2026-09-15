@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black Hole 3-Hour Interior Plunge Simulator | GRRT 3D Flight</title>
+  <meta name="description" content="Interactive 3D real-time WebGL simulation of plunging through a black hole's event horizon and traveling inside its interior for 3 hours.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Fullscreen WebGL Raytracing Canvas -->
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Sci-Fi Telemetry & HUD Overlay -->
+  <div class="hud-overlay">
+
+    <!-- Top Navigation & Title Bar -->
+    <header class="hud-header">
+      <div class="brand">
+        <span class="icon">🌀</span>
+        <div class="title-group">
+          <h1>EVENT HORIZON PLUNGE</h1>
+          <p class="subtitle">General Relativistic Ray-Tracing (GRRT) • Painlevé-Gullstrand Spacetime</p>
+        </div>
+      </div>
+      
+      <div class="status-badge" id="horizon-status-badge">
+        <span class="status-dot green"></span>
+        <span id="status-text">OUTSIDE EVENT HORIZON (r > 2M)</span>
+      </div>
+    </header>
+
+    <!-- Main HUD Telemetry Grid -->
+    <main class="hud-main">
+
+      <!-- Left Telemetry Panel -->
+      <aside class="hud-panel left-panel">
+        <div class="panel-header">
+          <h3>SYSTEM TELEMETRY</h3>
+        </div>
+        
+        <div class="telemetry-item">
+          <label>COORDINATE RADIUS (r)</label>
+          <div class="value-display highlight-cyan">
+            <span id="telemetry-r">40.00</span> <span class="unit">M</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="radius-bar" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <label>EVENT HORIZON DISTANCE</label>
+          <div class="value-display">
+            <span id="telemetry-dist-horizon">38.00</span> <span class="unit">M</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <label>DOPPLER BEAMING FACTOR (g)</label>
+          <div class="value-display">
+            <span id="telemetry-g">1.02</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <label>INFALL VELOCITY (v/c)</label>
+          <div class="value-display highlight-orange">
+            <span id="telemetry-v">0.22</span> <span class="unit">c</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <label>GRAVITATIONAL REDSHIFT</label>
+          <div class="value-display">
+            <span id="telemetry-redshift">z = 0.03</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Crosshair & Horizon Warning Alert -->
+      <section class="hud-center">
+        <div class="crosshair-container">
+          <div class="crosshair-ring"></div>
+          <div class="crosshair-dot"></div>
+        </div>
+
+        <div class="warning-banner hidden" id="horizon-warning">
+          <span class="warning-icon">⚠️</span>
+          <div class="warning-text">
+            <h2>CROSSING EVENT HORIZON (r = 2.0M)</h2>
+            <p>NO RETURN PATH • ENTERING INTERIOR SPACETIME CORRIDOR</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right 3-Hour Interior Timer & Controls Panel -->
+      <aside class="hud-panel right-panel">
+        <div class="panel-header">
+          <h3>INTERIOR JOURNEY TIMER</h3>
+        </div>
+
+        <div class="timer-card">
+          <label>TIME SPENT INSIDE BLACK HOLE</label>
+          <div class="timer-display" id="timer-clock">00:00:00</div>
+          <div class="timer-sub">Target Goal: 03:00:00 Hours</div>
+        </div>
+
+        <div class="control-group">
+          <label for="time-warp-select">TIME-WARP SPEED MULTIPLIER</label>
+          <select id="time-warp-select" class="hud-select">
+            <option value="1">1x (Real-Time 3 Hours)</option>
+            <option value="10">10x Speed (18 Min Journey)</option>
+            <option value="60" selected>60x Speed (3 Min Plunge)</option>
+            <option value="600">600x Warp Speed (18 Seconds)</option>
+            <option value="3600">3600x Ultra Warp (3 Seconds)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>FLIGHT MODE</label>
+          <div class="button-row">
+            <button class="btn btn-primary active" id="btn-autopilot">
+              <span class="btn-icon">🚀</span> AUTO-PILOT PLUNGE
+            </button>
+            <button class="btn btn-secondary" id="btn-manual">
+              <span class="btn-icon">🎮</span> MANUAL FLIGHT
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>AMBIENT AUDIO & RECORDING</label>
+          <div class="button-row">
+            <button class="btn btn-outline" id="btn-audio">
+              <span class="btn-icon">🔊</span> AUDIO: OFF
+            </button>
+            <button class="btn btn-accent" id="btn-record">
+              <span class="btn-icon">🔴</span> RECORD VIDEO
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>CAMERA DISTANCE & INCLINATION</label>
+          <input type="range" id="slider-distance" min="0.2" max="40" step="0.1" value="40" class="hud-slider">
+          <div class="slider-labels">
+            <span>Inside (0.2M)</span>
+            <span>Horizon (2M)</span>
+            <span>Outer (40M)</span>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- Bottom Controls & Keybindings Bar -->
+    <footer class="hud-footer">
+      <div class="controls-hint">
+        <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> Move Camera • 
+        <span class="key">Mouse Drag</span> Look Around • 
+        <span class="key">Space</span> Reset Camera Position
+      </div>
+      <div class="credits">
+        GRRT Physics Solver • Painlevé-Gullstrand Coordinate Metric
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
