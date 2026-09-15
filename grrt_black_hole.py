@@ -317,26 +317,26 @@ def calc_emission(r, phi, t_phase, M, r_isco, r_out):
 @njit(fastmath=True)
 def temperature_to_fiery_rgb(intensity, g):
     """
-    Relativistic Blackbody & Doppler Color Spectrum:
-    - Approaching side (high g ~ 1.2 - 2.0): Relativistic Doppler blueshift transforms gas into white-hot / incandescent yellow-cyan core.
-    - ISCO inner edge: Peak thermal emission producing brilliant white core.
-    - Receding side (low g ~ 0.4 - 0.7): Gravitational redshift dims gas into deep crimson red.
+    Exact NASA Goddard Fiery Orange Palette Matching img/bh_nasa.gif:
+    - Pitch black background -> deep crimson red -> rich fiery orange -> golden yellow ISCO core
+    - Moderate Doppler asymmetry matching NASA Goddard 2019 reference
     """
     if intensity <= 1e-6:
         return 0.0, 0.0, 0.0
 
-    # Relativistic Doppler boost factor g^3.5
-    doppler_boost = g ** 3.0
-    eff_intensity = intensity * doppler_boost
+    # Effective intensity with Doppler modulation
+    doppler_factor = 0.75 + 0.25 * g
+    eff_int = intensity * doppler_factor * 1.5
 
-    # Tone-mapped RGB channels
-    r_lum = eff_intensity * 3.5
-    g_lum = eff_intensity * (1.8 * (g ** 1.2))
-    b_lum = eff_intensity * (0.8 * (g ** 2.2))
-
+    # Red channel (Saturates smoothly)
+    r_lum = eff_int * 3.8
     r_val = r_lum / (1.0 + r_lum)
-    g_val = g_lum / (1.0 + g_lum)
-    b_val = b_lum / (1.0 + b_lum)
+
+    # Green channel (Crafts rich orange-gold gradient without washing out)
+    g_val = (r_val ** 1.8) * 0.55 + (r_val ** 4.0) * 0.40
+
+    # Blue channel (Faint warm highlight at extreme peaks)
+    b_val = (r_val ** 6.0) * 0.15
 
     return min(1.0, max(0.0, r_val)), min(1.0, max(0.0, g_val)), min(1.0, max(0.0, b_val))
 
